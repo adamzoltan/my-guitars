@@ -1,25 +1,53 @@
-import logo from './logo.svg';
+import React, {useState, useEffect} from 'react'
+import { Route } from 'react-router-dom'
+import { projectFirestore } from './firebaseConfig';
+
+import MyGuitars from './components/MyGuitars'
+import WishList from './components/WishList'
+import Header from './components/Header'
+import AddGuitarForm from './components/AddGuitarForm'
 import './App.css';
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+
+const App = () => {
+  const [guitars,setGuitars]=useState(undefined)
+  const [isPending, setIsPending] = useState(true);
+
+  const fetchGuitars = async () => {
+    setIsPending(true)
+    projectFirestore
+      .collection('guitars')
+      .orderBy('brand')
+      .get()
+      .then((snapshot) => {
+        let result = [];
+        snapshot.docs.forEach((doc) => {
+          result.push({ id: doc.id, ...doc.data() });
+        });
+        setGuitars(result)
+        setIsPending(false)
+      })
 }
 
-export default App;
+  useEffect(() => {
+    fetchGuitars();
+  }, [])
+
+  return (
+    <div>
+      <Header></Header>
+      {!isPending && <main>
+        <Route path='/myguitars'>
+          <MyGuitars guitars={guitars}></MyGuitars>
+        </Route>
+        <Route path='/wishlist'>
+          <WishList guitars={guitars}></WishList>
+        </Route>
+        <Route path='/addguitar'>
+          <AddGuitarForm></AddGuitarForm>
+        </Route>
+      </main>}
+    </div>
+  )
+}
+export default App
